@@ -35,6 +35,9 @@ class S3hoes
          :access_key_id     => key,
          :secret_access_key => secret
        )
+      "Connection successful."
+    rescue => e
+      e
     end
     
     def buckets
@@ -88,8 +91,9 @@ module S3hoesDrawingMethods
     @browser.clear.append do
       if @account.buckets.empty? then em("You don't have any buckets yet!")
       else
+        para strong("BUCKETS"), :stroke => black, :size => 10, :family => "Georgia", :top => 112
         stack :width => "100%", :margin => [0,5], :height => 26 do
-          flow(:width => '50%', :top => 0, :left => 0) { para strong("BUCKET"), :size => 10, :family => "Georgia" }
+          flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 10, :family => "Georgia" }
           flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 10, :align => 'center', :family => "Georgia" }
           flow(:width => '40%', :top => 0, :left => '60%') { para strong("CREATED ON"), :align => 'right', :size => 10, :family => "Georgia" }
         end
@@ -111,38 +115,47 @@ module S3hoesDrawingMethods
       if bucket.objects(:prefix => prefix).empty? then em("No files yet!")
       else
         objects                = bucket.objects
-        objects_without_prefix = objects.select { |o| o.key !~ /\// }
+        objects_without_prefix = objects.select { |o| o.key.gsub("#{prefix.to_s + '/' if prefix}", '') !~ /\// }
         prefixes               = objects.map { |o| o.key }.
-                                         select { |k| k =~ /\// }.
                                          map { |k| prefix.nil? ? k : k.gsub(/#{Regexp.escape(prefix)}\/?/, '') }.
+                                         select { |k| k =~ /\// }.
                                          map { |k| k.split('/').first }.
                                          uniq
         
         ary = [link(strong("BUCKETS"), :stroke => black, :size => 10, :family => "Georgia") { draw_account(@account.name) }, ' / ']
-        ary << link(strong(bucket.name.upcase), :stroke => black, :size => 10, :family => "Georgia") { draw_bucket(bucket) } unless prefix.nil?
+        if prefix.nil?
+          ary << strong(bucket.name.upcase, :stroke => black, :size => 10, :family => "Georgia")
+        else
+          ary << link(strong(bucket.name.upcase), :stroke => black, :size => 10, :family => "Georgia") { draw_bucket(bucket) } 
+        end
         prefix.split('/').each { |p|
           ary += [' / ', link(p.upcase, :stroke => black, :size => 10, :family => "Georgia")]
         } unless prefix.nil?
-        para ary, :top => 120
+        para ary, :top => 110
           
         stack :width => "100%", :margin => [0,5], :height => 26 do
           flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 10, :family => "Georgia" }
           flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 10, :align => 'center', :family => "Georgia" }
           flow(:width => '40%', :top => 0, :left => '60%') { para strong("MODIFIED ON"), :align => 'right', :size => 10, :family => "Georgia" }
         end
+        # Note: "prefix" is the aws/s3 term for "folder", "directory", etc. because we're dealing with keys
         prefixes.each do |p|
           stack :width => "100%", :margin => [0,5], :height => 26 do
             wouldbe_prefix = "#{prefix + '/' if prefix}#{p}"
             background "#EFEFDD"
-            flow(:width => '50%', :top => 0, :left => 0) { para(link("#{p}/", :stroke => black){ alert(wouldbe_prefix); draw_bucket(bucket, wouldbe_prefix) }) }
-            # flow(:width => '10%', :top => 0, :left => '50%') { para bucket.objects(, :align => 'center', :size => 10 }
+            flow(:width => '50%', :top => 0, :left => 0) { para(link("#{p}/", :stroke => black){ draw_bucket(bucket, wouldbe_prefix) }) }
+            flow(:width => '10%', :top => 0, :left => '50%') { para bucket.objects(:prefix => wouldbe_prefix).size, :align => 'center', :size => 10 }
             # extra attrs: owner, url, value, 
           end
         end
         objects_without_prefix.each do |object|
           stack :width => "100%", :margin => [0,5], :height => 26 do
             background "#EFEFDD"
-            flow(:width => '50%', :top => 0, :left => 0) { para(link(object.key, :stroke => black){ }) }
+            flow(:width => '50%', :top => 0, :left => 0) { 
+              para object.key.split('/').last, 
+                   link("DEL", :stroke => black, :size => 8) { alert('me') }, 
+                   link("GET", :stroke => black, :size => 8)
+            }
             flow(:width => '10%', :top => 0, :left => '50%') { para object.size, :align => 'center', :size => 10 }
             flow(:width => '40%', :top => 0, :left => '60%') { para object.last_modified, :align => 'right', :size => 10 }
             # extra attrs: owner, url, value, 
