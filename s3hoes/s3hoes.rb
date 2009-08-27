@@ -91,18 +91,23 @@ module S3hoesDrawingMethods
     @browser.clear.append do
       if @account.buckets.empty? then em("You don't have any buckets yet!")
       else
-        para strong("BUCKETS"), :stroke => black, :size => 10, :family => "Georgia", :top => 112
-        stack :width => "100%", :margin => [0,5], :height => 26 do
-          flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 10, :family => "Georgia" }
-          flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 10, :align => 'center', :family => "Georgia" }
-          flow(:width => '40%', :top => 0, :left => '60%') { para strong("CREATED ON"), :align => 'right', :size => 10, :family => "Georgia" }
+        # Breadcrumb
+        para strong("> BUCKETS"), :stroke => black, :size => 10, :family => "Georgia", :top => 115
+
+        # Header
+        stack :width => "100%", :margin => [0,15,0,0] do
+          flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 14, :family => "Georgia" }
+          flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 14, :align => 'center', :family => "Georgia" }
+          flow(:width => '40%', :top => 0, :left => '60%') { para strong("CREATED ON"), :size => 14, :align => 'right', :family => "Georgia" }
         end
+
+        # File listing
         @account.buckets.each do |bucket|
-          stack :width => "100%", :margin => [0,5], :height => 26 do
+          stack :width => "100%", :margin => [0,0,0,5] do
             background "#EFEFDD"
-            flow(:width => '50%', :top => 0, :left => 0) { para(link(bucket.name, :stroke => black){ draw_bucket(bucket) }) }
-            flow(:width => '10%', :top => 0, :left => '50%') { para bucket.size, :align => 'center', :size => 10 }
-            flow(:width => '40%', :top => 0, :left => '60%') { para bucket.creation_date, :align => 'right', :size => 10 }
+            flow(:width => '50%', :top => 5, :left => 0) { para(link(bucket.name, :stroke => black, :size => 12){ draw_bucket(bucket) }) }
+            flow(:width => '10%', :top => 5, :left => '50%') { para bucket.size, :align => 'center', :size => 12 }
+            flow(:width => '40%', :top => 5, :left => '60%') { para bucket.creation_date, :align => 'right', :size => 12 }
           end
         end
       end
@@ -122,42 +127,50 @@ module S3hoesDrawingMethods
                                          map { |k| k.split('/').first }.
                                          uniq
         
-        ary = [link(strong("BUCKETS"), :stroke => black, :size => 10, :family => "Georgia") { draw_account(@account.name) }, ' / ']
+        # Breadcrumb
+        ary = [link(strong("> BUCKETS"), :stroke => black, :size => 10, :family => "Georgia", :top => 112) { draw_account(@account.name) }, ' > ']
         if prefix.nil?
           ary << strong(bucket.name.upcase, :stroke => black, :size => 10, :family => "Georgia")
         else
           ary << link(strong(bucket.name.upcase), :stroke => black, :size => 10, :family => "Georgia") { draw_bucket(bucket) } 
         end
         prefix.split('/').each { |p|
-          ary += [' / ', link(p.upcase, :stroke => black, :size => 10, :family => "Georgia")]
+          ary += [' > ', link(p.upcase, :stroke => black, :size => 10, :family => "Georgia")]
         } unless prefix.nil?
-        para ary, :top => 110
-          
-        stack :width => "100%", :margin => [0,5], :height => 26 do
-          flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 10, :family => "Georgia" }
-          flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 10, :align => 'center', :family => "Georgia" }
-          flow(:width => '40%', :top => 0, :left => '60%') { para strong("MODIFIED ON"), :align => 'right', :size => 10, :family => "Georgia" }
+        para ary, :top => 113
+
+        # Header
+        stack :width => "100%", :margin => [0,15,0,5] do
+          flow(:width => '50%', :top => 0, :left => 0) { para strong("NAME"), :size => 14, :family => "Georgia" }
+          flow(:width => '10%', :top => 0, :left => '50%') { para strong("SIZE"), :size => 14, :align => 'center', :family => "Georgia" }
+          flow(:width => '40%', :top => 0, :left => '60%') { para strong("MODIFIED ON"), :size => 14, :align => 'right', :family => "Georgia" }
         end
+        
+        # File Listing
         # Note: "prefix" is the aws/s3 term for "folder", "directory", etc. because we're dealing with keys
         prefixes.each do |p|
-          stack :width => "100%", :margin => [0,5], :height => 26 do
+          stack :width => "100%", :margin => [0,0,0,5] do
             wouldbe_prefix = "#{prefix + '/' if prefix}#{p}"
             background "#EFEFDD"
-            flow(:width => '50%', :top => 0, :left => 0) { para(link("#{p}/", :stroke => black){ draw_bucket(bucket, wouldbe_prefix) }) }
-            flow(:width => '10%', :top => 0, :left => '50%') { para bucket.objects(:prefix => wouldbe_prefix).size, :align => 'center', :size => 10 }
+            flow(:width => '50%', :top => 5, :left => 0) { para(link("#{p}/", :stroke => black, :size => 12){ draw_bucket(bucket, wouldbe_prefix) }) }
+            flow(:width => '10%', :top => 5, :left => '50%') { para bucket.objects(:prefix => wouldbe_prefix).size, :align => 'center', :size => 12 }
             # extra attrs: owner, url, value, 
           end
         end
+        
         objects_without_prefix.each do |object|
-          stack :width => "100%", :margin => [0,5], :height => 26 do
+          stack :width => "100%", :margin => [0,0,0,5] do
             background "#EFEFDD"
-            flow(:width => '50%', :top => 0, :left => 0) { 
-              para object.key.split('/').last, 
-                   link("DEL", :stroke => black, :size => 8) { alert('me') }, 
-                   link("GET", :stroke => black, :size => 8)
+            flow(:width => '50%', :top => 5, :left => 0, :size => 12) {
+              # COME ON! There has to be a better way than this hide/show hack to bold some text on hover ^_^
+              k1 = para object.key.split('/').last
+              k2 = para strong(object.key.split('/').last), :hidden => true
+              hover { k1.hide; k2.show }; leave { k1.show; k2.hide }
             }
-            flow(:width => '10%', :top => 0, :left => '50%') { para object.size, :align => 'center', :size => 10 }
-            flow(:width => '40%', :top => 0, :left => '60%') { para object.last_modified, :align => 'right', :size => 10 }
+            flow(:width => '10%', :top => 5, :left => '50%') { para object.size, :align => 'center', :size => 12 }
+            flow(:width => '40%', :top => 5, :left => '60%') { para object.last_modified, :align => 'right', :size => 12 }
+            # hover { |_| _.background rgb(0.0, 0.0, 0.0, 0.5) }
+            # leave { |_| _.background nil }
             # extra attrs: owner, url, value, 
           end
         end
