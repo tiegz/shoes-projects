@@ -1,3 +1,14 @@
+# TODO
+# ----
+# * make rows smaller if possible
+# * add basic CRUD functions
+# * add a CRUD logger to track logging (with price estimates maybe?)
+
+# SHOES BUGS
+# ----------
+# * use shoes fork and try to debug ask_save_file() not-workingness
+#
+
 Shoes.setup { gem 'aws-s3' }
 require 'aws/s3'
 require 'yaml'
@@ -159,28 +170,41 @@ module S3hoesDrawingMethods
         end
         
         objects_without_prefix.each do |object|
-          stack :width => "100%", :margin => [0,0,0,5] do
+          s = stack :width => "100%", :margin => [0,0,0,5] do
             background "#EFEFDD"
-            flow(:width => '50%', :top => 5, :left => 0, :size => 12) {
-              # COME ON! There has to be a better way than this hide/show hack to bold some text on hover ^_^
-              k1 = para object.key.split('/').last
-              k2 = para strong(object.key.split('/').last), :hidden => true
-              hover { k1.hide; k2.show }; leave { k1.show; k2.hide }
-            }
+            flow(:width => '50%', :top => 5, :left => 0, :size => 12) { para object.key.split('/').last }
             flow(:width => '10%', :top => 5, :left => '50%') { para object.size, :align => 'center', :size => 12 }
             flow(:width => '40%', :top => 5, :left => '60%') { para object.last_modified, :align => 'right', :size => 12 }
-            # hover { |_| _.background rgb(0.0, 0.0, 0.0, 0.5) }
-            # leave { |_| _.background nil }
-            # extra attrs: owner, url, value, 
+            # extra attrs: owner, url, value, metadata
+            hover { s.children.each { |f| f.children[0].style(:weight => 'bold') if f.is_a?(Flow) } }
+            leave { s.children.each { |f| f.children[0].style(:weight => 'normal') if f.is_a?(Flow) } }
+            click { 
+              path = ask_save_folder + "/#{object.key}"
+              @status.show
+              download object.url, 
+                      :save => path, 
+                      :progress => proc { |dl| @status.text = "Saving to path #{path}... status: #{dl.percent}%" }
+              # open(path, 'w') do |file|
+              #   AWS::S3::S3Object.stream(object.key, object.bucket.name) do |chunk|
+              #     alert(chunk)
+              #     file.write chunk
+              #   end
+              # end
+            }
           end
         end
       end
     end
+  
+    @status = para 
+    @status.hide
   end
+  
 end
 
 Shoes.app :title => "S3hoes", :width => 800, :height => 600, :resizable => true do
   extend S3hoesDrawingMethods
+  @selected = []
   @s3hoes = S3hoes.new
 
   draw_everything
