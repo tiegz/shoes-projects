@@ -179,7 +179,7 @@ module S3hoesDrawingMethods
             hover { s.children.each { |f| f.children[0].style(:weight => 'bold') if f.is_a?(Flow) } }
             leave { s.children.each { |f| f.children[0].style(:weight => 'normal') if f.is_a?(Flow) } }
             click { 
-              path = ask_save_folder + "/#{object.key}"
+              path = ask_save_file
               @status.show
               download object.url, 
                       :save => path, 
